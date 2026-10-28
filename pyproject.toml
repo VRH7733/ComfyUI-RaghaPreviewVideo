@@ -1,0 +1,17 @@
+[project]
+name = "comfyui-fastvideopreview"
+description = "Fast, disk-free video preview node for ComfyUI. A tribute to kijai's KJNodes Fast Preview, built for video."
+version = "1.0.0"
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/VRH7733/ComfyUI-FastVideoPreview"
+Issues = "https://github.com/VRH7733/ComfyUI-FastVideoPreview/issues"
+
+[tool.comfy]
+PublisherId = "YOUR_PUBLISHER_ID"
+DisplayName = "FastVideoPreview"
+Icon = ""
