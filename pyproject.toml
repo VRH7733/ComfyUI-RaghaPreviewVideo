@@ -12,6 +12,6 @@ Repository = "https://github.com/VRH7733/ComfyUI-FastVideoPreview"
 Issues = "https://github.com/VRH7733/ComfyUI-FastVideoPreview/issues"
 
 [tool.comfy]
-PublisherId = "YOUR_PUBLISHER_ID"
+PublisherId = "raghav"
 DisplayName = "FastVideoPreview"
 Icon = ""
