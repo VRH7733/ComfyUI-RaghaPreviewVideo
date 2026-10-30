@@ -84,11 +84,11 @@
         60
       ],
       "size": [
-        320,
-        300
+        360,
+        420
       ],
       "flags": {},
-      "order": 1,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -103,6 +103,27 @@
           "name": "video",
           "shape": 7,
           "type": "VIDEO",
+          "link": null
+        },
+        {
+          "localized_name": "images_b",
+          "name": "images_b",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "video_b",
+          "name": "video_b",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
           "link": null
         },
         {
@@ -140,9 +161,55 @@
             "name": "max_frames"
           },
           "link": null
+        },
+        {
+          "localized_name": "compare",
+          "name": "compare",
+          "type": "COMBO",
+          "widget": {
+            "name": "compare"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "include_audio",
+          "name": "include_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "include_audio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "refresh_every_run",
+          "name": "refresh_every_run",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "refresh_every_run"
+          },
+          "link": null
         }
       ],
-      "outputs": [],
+      "outputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
       "properties": {
         "Node name for S&R": "RaghaPreviewVideo"
       },
@@ -151,7 +218,9 @@
         512,
         50,
         0,
-        ""
+        "slider",
+        true,
+        true
       ]
     }
   ],

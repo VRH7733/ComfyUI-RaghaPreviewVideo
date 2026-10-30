@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-fastvideopreview"
-description = "Ragha Preview Video: a fast, disk-free video preview node for ComfyUI. A tribute to kijai's KJNodes Fast Preview, built for video."
-version = "1.1.0"
+description = "Ragha Preview Video: fast, disk-free video preview for ComfyUI with sound, A/B compare and passthrough outputs. A tribute to kijai's KJNodes Fast Preview, built for video."
+version = "1.2.0"
 license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.10"
