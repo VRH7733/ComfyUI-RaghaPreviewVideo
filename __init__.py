@@ -436,8 +436,9 @@ class RaghaPreviewVideo:
     FUNCTION = "build_preview"
     CATEGORY = "video/ragha"
     OUTPUT_NODE = True
-    DESCRIPTION = ("Plays a video preview on the node, with sound and an optional A/B comparison. "
-                   "Streams 4K video with little RAM and writes nothing to disk.")
+    DESCRIPTION = ("Fast video preview on the node, with sound and optional A/B compare. "
+                   "Clips stay in memory and reach the browser as raw binary (no base64/JSON, nothing written to disk). "
+                   "Inspired by kijai's Fast Preview.")
 
     def build_preview(self, fps, max_size, quality, max_frames, compare="slider", include_audio=True,
                       refresh_every_run=False, images=None, video=None, images_b=None, video_b=None,
