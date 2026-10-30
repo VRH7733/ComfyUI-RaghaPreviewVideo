@@ -21,7 +21,7 @@ Connect a second clip and compare the two with a slider or side by side. Nothing
   Good for before/after checks of upscaling, interpolation, colour grading or a new seed.
 - **Passthrough:** `images`, `video` and `audio` outputs let you put the node in the middle of a workflow.
 - Shrinks and encodes in RAM (H.264 `ultrafast`, WebM fallback), so previews are quick and light.
-- Streams large video inputs one frame at a time, so even a 4K clip does not fill your RAM.
+- Streams video one frame at a time (decode, shrink, encode), so a 1-minute 4K video uses about 200 MB of RAM.
 - Writes **nothing** to disk.
 
 ## Install
@@ -78,6 +78,55 @@ Example workflows are in [`examples/`](examples):
 
 An output is empty when its input is not connected (for example `images` when you only connected `video`).
 
+## Requirements and performance guide
+
+**Software**
+- ComfyUI with the current frontend (tested: ComfyUI 0.43.1, frontend 1.57.4). No extra pip packages: it only uses `torch`, `numpy` and `av` (PyAV), which ComfyUI already installs.
+- Works on CPU-only machines. A GPU is not needed for the preview itself.
+
+**Browser** (the preview plays in the ComfyUI tab)
+| Browser | Status |
+|---|---|
+| Chrome / Edge (Windows, macOS, Linux) | Recommended. Frame-exact A/B sync. |
+| Firefox | Works. Plays H.264 using the system's codecs. |
+| Safari (macOS) | Should work (H.264 is built in); not tested. |
+- Previews start **muted** because browsers only autoplay muted video. Click the speaker to hear the sound.
+- Keep the ComfyUI tab in front while comparing. Browsers slow down hidden tabs, and A/B sync may drift until you come back.
+
+**RAM and speed**, measured on a low-end laptop (AMD Ryzen 3 3250U, 2 cores, 6 GB RAM, CPU only)
+with 4K 30 fps phone-like videos (~67 Mbit/s, with sound), default settings (`max_size` 512, `max_frames` 0):
+
+| Input video | Preview built in | Extra RAM used by the node | Preview size sent to the browser |
+|---|---|---|---|
+| 4K, 15 s | 9 s | ~180 MB | 0.5 MB |
+| 4K, 30 s | 16 s | ~185 MB | 1.1 MB |
+| 4K, 60 s | 29 s | ~195 MB | 2.2 MB |
+| 4K, 30 s, A/B compare (two videos) | 27 s | ~180 MB | 1.7 MB |
+| 720p, 81-frame IMAGE batch (e.g. a generated clip) | 2.6 s | ~30 MB on top of the batch itself | 0.01 MB |
+
+- RAM stays about the same **whatever the video length**: frames are decoded, shrunk and encoded one at a time.
+- Time is mostly spent **decoding** the 4K source, so it grows with video length and is faster on CPUs with more cores.
+  A modern 6–8-core CPU should be roughly 2–4× faster than the numbers above.
+- Minimum for 1-minute 4K: **8 GB system RAM** (ComfyUI itself plus the node). 16 GB is comfortable alongside models.
+
+**Settings for long or 4K videos**
+| You want | Set |
+|---|---|
+| Faster previews | `max_size` 256 or 384 |
+| Lighter previews of long videos | `max_frames` 240 (keeps the full duration, fewer frames) |
+| Smaller previews | `quality` 30–40 |
+| Previews in the middle of a workflow | `refresh_every_run` off |
+
+## Compared with kijai's Fast Preview
+| | Fast Preview (KJNodes) | Ragha Preview Video |
+|---|---|---|
+| Sends the preview through ComfyUI's binary websocket, in memory | Yes | Yes (same channel, same sending code) |
+| Writes files to output or temp | No | No |
+| What you see | One still image (the first frame) | The whole clip playing, with sound |
+| Input | IMAGE | IMAGE or VIDEO (streamed, so 4K is fine) |
+| Compare two results | No | A/B slider or side by side |
+| Outputs | None | images, video, audio passthrough |
+
 ## How it works
 1. Frames are downscaled and encoded in memory (H.264 + AAC audio via PyAV, WebM fallback without audio).
 2. The clips (A, and B when comparing) are packed into one message and sent through ComfyUI's built-in
@@ -88,7 +137,7 @@ An output is empty when its input is not connected (for example `images` when yo
 
 ## Good to know
 - Previews live only in the browser tab; reloading the page clears them. Run the node again to bring one back.
-- Very long `video` inputs are sub-sampled automatically to stay under a memory cap (about 800 MB).
+- A VIDEO input's trim (start and duration, e.g. from a trim node) is respected, for both picture and sound.
 - **Hosted/cloud ComfyUI** (Comfy Cloud, RunningHub, and similar) generally only offers nodes that the provider has pre-installed,
   so this node will not appear there until the provider adds it.
 - Tested with ComfyUI 0.43.1 and frontend 1.57.4. Newer or older frontends may behave differently — please open an issue.
@@ -101,7 +150,8 @@ An output is empty when its input is not connected (for example `images` when yo
 | No sound | Click the speaker button. If it is missing, the clip has no audio: connect `audio` or use a video with sound, and keep `include_audio` on. |
 | Nodes after it re-run every time | Turn off `refresh_every_run`. |
 | `No module named 'av'` | `pip install av` in ComfyUI's Python environment. |
-| Out-of-memory with a huge video | Lower `max_size` or set `max_frames` (for example 48). |
+| Preview takes long on a 4K video | Lower `max_size` (256) or set `max_frames` (240). See the guide above. |
+| A and B drift apart | Keep the ComfyUI tab in front; browsers slow down hidden tabs. |
 
 ## Licence
 **GPL-3.0**, the same licence as ComfyUI-KJNodes, because this node follows the structure and method of KJNodes' Fast Preview.

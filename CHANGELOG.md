@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1
+- **Much lower RAM for long and 4K videos**: frames are now decoded, shrunk and encoded one at a time instead of being collected first.
+  A 1-minute 4K video went from ~1.1 GB to ~200 MB of extra RAM, and previews are 8–16% faster. Image batches are shrunk a few frames at a time.
+- **Frame-exact A/B sync**: B now follows A on every video frame (with a timer fallback), and catches up by adjusting its speed instead of jumping.
+  Measured gap: 1 ms typical, under 15 ms worst (one frame at 30 fps is 33 ms).
+- A VIDEO input's trim window (start and duration) is now respected for picture and sound.
+- Sound is written in step with the video.
+- New README section: requirements and performance guide (RAM, browser, settings for 4K), and a comparison with kijai's Fast Preview.
+
 ## 1.2.0
 - **A/B compare**: new optional `images_b` / `video_b` inputs. A and B play in sync with a drag **slider** or **side by side** (`compare`). B follows A by progress, so frame N of B lines up with frame N of A.
 - **Sound**: the preview plays audio from the new `audio` input, or from the A video's own audio track (`include_audio`). Use the speaker button or the player's controls to unmute.

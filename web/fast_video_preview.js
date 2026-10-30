@@ -201,7 +201,19 @@ app.registerExtension({
       const syncB = () => {
         if (mode === "single" || !videoA.duration || !videoB.duration) return;
         const target = (videoA.currentTime / videoA.duration) * videoB.duration;
-        if (Math.abs(videoB.currentTime - target) > 0.1 * Math.max(1, videoB.playbackRate)) videoB.currentTime = target;
+        let diff = target - videoB.currentTime;
+        const half = videoB.duration / 2;
+        if (diff > half) diff -= videoB.duration; // across the loop point
+        else if (diff < -half) diff += videoB.duration;
+        const base = videoA.playbackRate * (videoB.duration / videoA.duration);
+        if (videoA.paused || Math.abs(diff) > 0.25) {
+          // paused or far off: jump straight to A's frame
+          if (Math.abs(diff) > 0.01) videoB.currentTime = target;
+          videoB.playbackRate = base;
+          return;
+        }
+        // close: nudge B's speed so it catches up smoothly, without seeking
+        videoB.playbackRate = base * (1 + Math.max(-0.2, Math.min(0.2, diff * 3)));
       };
       videoA.addEventListener("loadedmetadata", rateB);
       videoB.addEventListener("loadedmetadata", rateB);
@@ -210,15 +222,18 @@ app.registerExtension({
       videoA.addEventListener("seeked", syncB);
       videoA.addEventListener("ratechange", rateB);
       videoA.addEventListener("timeupdate", () => {
+        syncB();
         if (videoA.duration) seek.value = String(Math.round((videoA.currentTime / videoA.duration) * 1000));
         time.textContent = `${fmt(videoA.currentTime)} / ${fmt(videoA.duration)} s`;
       });
-      let raf = 0;
-      const tick = () => {
+      // sync on every frame A presents; a slow timer covers browsers without frame callbacks
+      let frameCb = 0;
+      const onFrame = () => {
         syncB();
-        raf = requestAnimationFrame(tick);
+        frameCb = videoA.requestVideoFrameCallback(onFrame);
       };
-      raf = requestAnimationFrame(tick);
+      if (videoA.requestVideoFrameCallback) frameCb = videoA.requestVideoFrameCallback(onFrame);
+      const timer = setInterval(syncB, 250);
 
       playBtn.addEventListener("click", () => { videoA.paused ? videoA.play().catch(() => {}) : videoA.pause(); });
       seek.addEventListener("input", () => {
@@ -270,7 +285,8 @@ app.registerExtension({
       nodeRef.onRemoved = function () {
         api.removeEventListener("b_preview_with_metadata", metaHandler);
         api.removeEventListener("b_preview", plainHandler);
-        cancelAnimationFrame(raf);
+        if (frameCb) videoA.cancelVideoFrameCallback?.(frameCb);
+        clearInterval(timer);
         urls.forEach((u) => URL.revokeObjectURL(u));
         return origRemoved ? origRemoved.apply(this, arguments) : undefined;
       };

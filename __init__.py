@@ -12,6 +12,9 @@ KJNodes sends one JPEG/PNG still; this node sends small H.264 clips (with audio,
 and an optional second clip for A/B comparison), and web/fast_video_preview.js
 plays them on the node.
 
+Frames are streamed: decoded (or read from the batch), shrunk and encoded one at a
+time, so a 1-minute 4K video previews with a small, constant amount of RAM.
+
 Because this follows KJNodes' structure, it is released under the same licence,
 GPL-3.0 (see LICENSE).
 
@@ -21,6 +24,7 @@ Install: put this folder in ComfyUI/custom_nodes/ and restart ComfyUI.
 import io
 import json
 import struct
+import time
 from fractions import Fraction
 
 try:
@@ -34,157 +38,116 @@ LOG = "[Ragha Preview Video]"
 
 
 # ---------------------------------------------------------------------------
-# Frame preparation + in-memory encoders
+# Sizes
 # ---------------------------------------------------------------------------
-def _prepare_frames(images, max_size, max_frames, fps):
-    """[B,H,W,C] float 0..1 tensor -> ([B,h,w,3] uint8 ndarray, effective fps)."""
+def _even(n):
+    return max(2, int(round(n / 2)) * 2)  # yuv420p needs even sizes
+
+
+def _fit(w, h, max_size):
+    scale = min(1.0, max_size / max(w, h))
+    return _even(w * scale), _even(h * scale)
+
+
+# ---------------------------------------------------------------------------
+# Frame sources: each returns (width, height, fps, iterator of [h,w,3] uint8 frames)
+# ---------------------------------------------------------------------------
+def _image_source(images, max_size, max_frames, fps, chunk=16):
+    """IMAGE batch [B,H,W,C] float 0..1, shrunk a few frames at a time to keep RAM low."""
     import torch
     import torch.nn.functional as F
 
     total = images.shape[0]
+    idx = list(range(total))
     if 0 < max_frames < total:
-        idx = torch.linspace(0, total - 1, max_frames).round().long()
-        images = images[idx]
-        fps = fps * images.shape[0] / total  # keep real-time duration
-
-    images = images[..., :3]
+        idx = torch.linspace(0, total - 1, max_frames).round().long().tolist()
+        fps = fps * len(idx) / total  # keep real-time duration
     h, w = images.shape[1], images.shape[2]
-    scale = min(1.0, max_size / max(h, w))
-    nh = max(2, int(round(h * scale / 2)) * 2)  # yuv420p needs even sizes
-    nw = max(2, int(round(w * scale / 2)) * 2)
+    nw, nh = _fit(w, h, max_size)
 
-    x = images.permute(0, 3, 1, 2).float()
-    if (nh, nw) != (h, w):
-        x = F.interpolate(x, size=(nh, nw), mode="bilinear", antialias=True, align_corners=False)
-    x = (x.clamp(0, 1) * 255).round().to(torch.uint8)
-    frames = x.permute(0, 2, 3, 1).contiguous().cpu().numpy()
-    return frames, max(fps, 0.1)
+    def frames():
+        for i in range(0, len(idx), chunk):
+            x = images[idx[i:i + chunk]][..., :3].permute(0, 3, 1, 2).float()
+            if (nh, nw) != (h, w):
+                x = F.interpolate(x, size=(nh, nw), mode="bilinear", antialias=True, align_corners=False)
+            x = (x.clamp(0, 1) * 255).round().to(torch.uint8).permute(0, 2, 3, 1).contiguous().cpu().numpy()
+            yield from x
 
-
-class _KeepOpen(io.BytesIO):
-    """PyAV closes the file object it writes to; keep the bytes readable."""
-
-    def close(self):
-        pass
+    return nw, nh, max(fps, 0.1), frames()
 
 
-def _encode_av(frames, fps, container_format, codec, options, audio=None):
-    """Encode frames (and optional (samples [C,T] float32, rate) audio) to bytes."""
-    import av
-    import numpy as np
-
-    h, w = frames.shape[1], frames.shape[2]
-    buf = _KeepOpen()
-    container = av.open(buf, mode="w", format=container_format)
+def _trim_window(video):
+    """(start, duration) in seconds; duration 0 means 'to the end'."""
     try:
-        stream = container.add_stream(codec, rate=Fraction(fps).limit_denominator(1000))
-        stream.width = w
-        stream.height = h
-        stream.pix_fmt = "yuv420p"
-        stream.options = options
-
-        astream = samples = None
-        if audio is not None:
-            samples, rate = audio
-            samples = samples[:2]  # previews are mono or stereo
-            samples = samples[:, : int(round(len(frames) / fps * rate))]  # match the video length
-            if samples.shape[1] > 0:
-                layout = "mono" if samples.shape[0] == 1 else "stereo"
-                astream = container.add_stream("aac", rate=rate, layout=layout)
-
-        for f in frames:
-            for packet in stream.encode(av.VideoFrame.from_ndarray(f, format="rgb24")):
-                container.mux(packet)
-        for packet in stream.encode():
-            container.mux(packet)
-
-        if astream is not None:
-            frame = av.AudioFrame.from_ndarray(
-                np.ascontiguousarray(samples, dtype=np.float32), format="fltp", layout=astream.layout.name
-            )
-            frame.sample_rate = astream.rate
-            for packet in astream.encode(frame):
-                container.mux(packet)
-            for packet in astream.encode():
-                container.mux(packet)
-    finally:
-        container.close()
-    return buf.getvalue(), astream is not None
+        start, duration = video.get_active_trim_window()
+        return float(start or 0), float(duration or 0)
+    except Exception:
+        return 0.0, 0.0
 
 
-def _encode(frames, fps, quality, audio=None):
-    """Returns (bytes, mime, has_audio). H.264 MP4 first, WebM (no audio) as a fallback."""
-    crf = int(round(40 - (quality - 1) * 22 / 99))  # quality 100 -> 18, 1 -> 40
-    h264 = {"crf": str(crf), "preset": "ultrafast"}
-    if audio is not None:
-        try:
-            data, has_audio = _encode_av(frames, fps, "mp4", "libx264", h264, audio)
-            return data, "video/mp4", has_audio
-        except Exception as e:
-            print(f"{LOG} encode with audio failed ({e}); previewing without audio.")
-    try:
-        return _encode_av(frames, fps, "mp4", "libx264", h264)[0], "video/mp4", False
-    except Exception as e:
-        print(f"{LOG} H.264 encode failed ({e}); trying WebM.")
-    data, _ = _encode_av(
-        frames, fps, "webm", "libvpx",
-        {"crf": str(min(crf, 63)), "b": "0", "deadline": "realtime", "cpu-used": "8"},
-    )
-    return data, "video/webm", False
-
-
-def _frames_from_video(video, max_size, max_frames, mem_limit=800_000_000):
-    """
-    Stream-decode a VIDEO input and shrink every kept frame immediately, so a 4K clip
-    never has to fit in RAM at full size. Returns ([N,h,w,3] uint8, effective fps).
-    Frames are sub-sampled (stride) to honour max_frames and a memory cap.
-    """
+def _video_source(video, max_size, max_frames):
+    """VIDEO file: decode -> shrink -> hand over one frame at a time (never holds full-size frames)."""
     import av
-    import numpy as np
 
+    start, duration = _trim_window(video)
     container = av.open(video.get_stream_source())
     try:
         stream = container.streams.video[0]
         stream.thread_type = "AUTO"
         w, h = stream.codec_context.width, stream.codec_context.height
-        scale = min(1.0, max_size / max(w, h))
-        nw = max(2, int(round(w * scale / 2)) * 2)
-        nh = max(2, int(round(h * scale / 2)) * 2)
-        fps = float(stream.average_rate or 24)
-        total = int(stream.frames or 0)
-        per_frame = nw * nh * 3
-
-        stride = 1
-        if total:
-            if 0 < max_frames < total:
-                stride = -(-total // max_frames)
-            while -(-total // stride) * per_frame > mem_limit:
-                stride += 1
-
-        frames = []
-        count = 0
-        for frame in container.decode(stream):
-            if count % stride == 0:
-                if len(frames) * per_frame >= mem_limit:
-                    print(f"{LOG} memory cap reached; preview truncated.")
-                    break
-                if 0 < max_frames <= len(frames):
-                    break
-                frames.append(frame.reformat(width=nw, height=nh, format="rgb24").to_ndarray())
-            count += 1
-    finally:
+        nw, nh = _fit(w, h, max_size)
+        fps = float(stream.average_rate or stream.guessed_rate or 24)
+        if duration:
+            total = int(duration * fps)
+        elif stream.frames:
+            total = int(stream.frames)
+        elif container.duration:
+            total = int(container.duration / av.time_base * fps)
+        else:
+            total = 0
+        stride = -(-total // max_frames) if total and 0 < max_frames < total else 1
+        if start:
+            container.seek(int(start / stream.time_base), stream=stream)
+    except Exception:
         container.close()
+        raise
 
-    if not frames:
-        raise ValueError("no frames decoded")
-    return np.stack(frames), max(fps / stride, 0.1)
+    def frames():
+        try:
+            kept = n = 0
+            for frame in container.decode(stream):
+                t = float(frame.pts * stream.time_base) if frame.pts is not None else None
+                if t is not None and t < start - 1e-6:
+                    continue
+                if duration and t is not None and t >= start + duration - 1e-6:
+                    break
+                n += 1
+                if (n - 1) % stride:
+                    continue
+                if 0 < max_frames <= kept:
+                    break
+                kept += 1
+                yield frame.reformat(width=nw, height=nh, format="rgb24", interpolation="AREA").to_ndarray()
+        finally:
+            container.close()
+
+    return nw, nh, max(fps / stride, 0.1), frames()
 
 
+# ---------------------------------------------------------------------------
+# Audio
+# ---------------------------------------------------------------------------
 def _audio_from_video(video):
-    """Decode a VIDEO input's audio track -> ([C,T] float32, sample_rate), or None."""
-    import av
+    """A VIDEO's audio track -> ([C,T] float32, sample_rate), or None. Honours the trim window."""
     import numpy as np
 
+    if not hasattr(video, "get_stream_source"):  # built from components: audio is already in memory
+        comps = video.get_components()
+        return _audio_from_input(comps.audio) if comps.audio else None
+
+    import av
+
+    start, duration = _trim_window(video)
     container = av.open(video.get_stream_source())
     try:
         if not container.streams.audio:
@@ -201,7 +164,10 @@ def _audio_from_video(video):
         container.close()
     if not chunks or not rate:
         return None
-    return np.concatenate(chunks, axis=1).astype(np.float32), int(rate)
+    samples = np.concatenate(chunks, axis=1).astype(np.float32)
+    a = int(start * rate)
+    b = int((start + duration) * rate) if duration else samples.shape[1]
+    return samples[:, a:b], int(rate)
 
 
 def _audio_from_input(audio):
@@ -214,27 +180,139 @@ def _audio_from_input(audio):
     return waveform.float().cpu().numpy(), int(audio["sample_rate"])
 
 
+# ---------------------------------------------------------------------------
+# In-memory encoder
+# ---------------------------------------------------------------------------
+class _KeepOpen(io.BytesIO):
+    """PyAV closes the file object it writes to; keep the bytes readable."""
+
+    def close(self):
+        pass
+
+
+class _ClipWriter:
+    """
+    Encodes frames into an in-memory H.264 MP4 as they arrive (WebM without sound if
+    H.264 is unavailable), so only one frame is held at a time. Sound is written in
+    step with the video and cut to the video's length.
+    """
+
+    def __init__(self, width, height, fps, quality, audio=None):
+        self.width, self.height, self.fps = width, height, fps
+        self.frames = 0
+        self._apos = 0
+        crf = int(round(40 - (quality - 1) * 22 / 99))  # quality 100 -> 18, 1 -> 40
+        try:
+            self._open("mp4", "libx264", {"crf": str(crf), "preset": "ultrafast"}, audio)
+            self.mime = "video/mp4"
+        except Exception as e:
+            print(f"{LOG} H.264 encoder unavailable ({e}); using WebM without sound.")
+            self._open("webm", "libvpx",
+                       {"crf": str(min(crf, 63)), "b": "0", "deadline": "realtime", "cpu-used": "8"}, None)
+            self.mime = "video/webm"
+
+    def _open(self, fmt, codec, options, audio):
+        import av
+        import numpy as np
+
+        self._buf = _KeepOpen()
+        self._c = av.open(self._buf, mode="w", format=fmt)
+        try:
+            v = self._c.add_stream(codec, rate=Fraction(self.fps).limit_denominator(1000))
+            v.width, v.height, v.pix_fmt = self.width, self.height, "yuv420p"
+            v.options = options
+            self._v, self._a = v, None
+            if audio is not None and audio[0].shape[1] > 0:
+                samples, rate = audio
+                self._samples = np.ascontiguousarray(samples[:2], dtype=np.float32)  # mono or stereo
+                self._rate = rate
+                self._layout = "mono" if self._samples.shape[0] == 1 else "stereo"
+                try:
+                    self._a = self._c.add_stream("aac", rate=rate, layout=self._layout)
+                except Exception as e:
+                    print(f"{LOG} AAC encoder unavailable ({e}); previewing without sound.")
+        except Exception:
+            self._c.close()
+            raise
+
+    def _push_audio(self):
+        import av
+
+        upto = min(int(round(self.frames / self.fps * self._rate)), self._samples.shape[1])
+        if upto <= self._apos:
+            return
+        f = av.AudioFrame.from_ndarray(self._samples[:, self._apos:upto].copy(), format="fltp", layout=self._layout)
+        f.sample_rate = self._rate
+        for p in self._a.encode(f):
+            self._c.mux(p)
+        self._apos = upto
+
+    def add(self, rgb):
+        import av
+
+        for p in self._v.encode(av.VideoFrame.from_ndarray(rgb, format="rgb24")):
+            self._c.mux(p)
+        self.frames += 1
+        if self._a is not None:
+            self._push_audio()
+
+    def finish(self):
+        try:
+            for p in self._v.encode():
+                self._c.mux(p)
+            if self._a is not None:
+                self._push_audio()
+                for p in self._a.encode():
+                    self._c.mux(p)
+        finally:
+            self._c.close()
+        return self._buf.getvalue(), self._a is not None and self._apos > 0
+
+    def abort(self):
+        try:
+            self._c.close()
+        except Exception:
+            pass
+
+
 def _make_clip(slot, images, video, fps, max_size, max_frames, quality, audio=None):
-    frames = None
+    t0 = time.perf_counter()
+    source = None
     if images is None and video is not None:
         try:
-            # streaming decode: never holds full-size frames in RAM
-            frames, fps = _frames_from_video(video, max_size, max_frames)
+            source = _video_source(video, max_size, max_frames)
         except Exception as e:
-            print(f"{LOG} streaming decode failed ({e}); using full decode.")
+            # e.g. a VIDEO built from frames in this workflow: its frames are already in memory
+            print(f"{LOG} {slot}: cannot stream this video ({e}); using its frames.")
             comps = video.get_components()
             images = comps.images
             try:
                 fps = float(comps.frame_rate)
             except Exception:
                 pass
-    if frames is None:
-        frames, fps = _prepare_frames(images, max_size, max_frames, fps)
-    data, mime, has_audio = _encode(frames, fps, quality, audio)
-    return {"slot": slot, "data": data, "mime": mime, "audio": has_audio, "fps": fps,
-            "width": int(frames.shape[2]), "height": int(frames.shape[1])}
+    if source is None:
+        source = _image_source(images, max_size, max_frames, fps)
+
+    w, h, fps, frames = source
+    writer = _ClipWriter(w, h, fps, quality, audio)
+    try:
+        for f in frames:
+            writer.add(f)
+    except Exception:
+        writer.abort()
+        raise
+    data, has_audio = writer.finish()
+    if writer.frames == 0:
+        raise ValueError(f"Ragha Preview Video: no frames in {slot}.")
+    print(f"{LOG} {slot}: {writer.frames} frames, {w}x{h} @ {fps:.3g} fps, "
+          f"{len(data) / 1e6:.2f} MB{' + sound' if has_audio else ''}, {time.perf_counter() - t0:.1f} s")
+    return {"slot": slot, "data": data, "mime": writer.mime, "audio": has_audio, "fps": fps,
+            "width": w, "height": h}
 
 
+# ---------------------------------------------------------------------------
+# Sending
+# ---------------------------------------------------------------------------
 _MAGIC = b"RPV1"
 
 
@@ -290,7 +368,8 @@ class FastVideoPreview:
                 "quality": ("INT", {"default": 50, "min": 1, "max": 100}),
                 "max_frames": ("INT", {
                     "default": 0, "min": 0, "max": 4096,
-                    "tooltip": "0 = every frame. Otherwise frames are sub-sampled evenly to this count.",
+                    "tooltip": "0 = every frame. Otherwise frames are sub-sampled evenly to this count "
+                               "(faster previews of long videos).",
                 }),
                 "compare": (["slider", "side by side"], {
                     "default": "slider",
