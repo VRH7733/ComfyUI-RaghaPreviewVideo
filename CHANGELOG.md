@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.3.0
+- **New home**: the GitHub repo is now `VRH7733/ComfyUI-RaghaPreviewVideo` (the old link redirects) and the registry pack is
+  `comfyui-ragha-preview-video`. Versions up to 1.2.x stay on the old pack `comfyui-fastvideopreview`.
 - **New delivery of the preview**: finished clips are kept on an in-memory shelf (never on disk) and the player fetches them by
   one-off token from `/ragha_preview_video/clip/<token>`. The node no longer uses the websocket image-preview messages.
 - **Cached runs show the preview again** without re-encoding, so `refresh_every_run` is now **off by default**.

@@ -1,5 +1,5 @@
 [project]
-name = "comfyui-fastvideopreview"
+name = "comfyui-ragha-preview-video"
 description = "Ragha Preview Video: an on-node video player for ComfyUI with sound, A/B compare (slider or side by side) and passthrough outputs. Streams 4K video with little RAM and writes nothing to disk. Inspired by kijai's Fast Preview."
 version = "1.3.0"
 license = { file = "LICENSE" }
@@ -8,10 +8,10 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/VRH7733/ComfyUI-FastVideoPreview"
-Issues = "https://github.com/VRH7733/ComfyUI-FastVideoPreview/issues"
+Repository = "https://github.com/VRH7733/ComfyUI-RaghaPreviewVideo"
+Issues = "https://github.com/VRH7733/ComfyUI-RaghaPreviewVideo/issues"
 
 [tool.comfy]
 PublisherId = "raghav"
 DisplayName = "Ragha Preview Video"
-Icon = "https://raw.githubusercontent.com/VRH7733/ComfyUI-FastVideoPreview/main/assets/icon.png"
+Icon = "https://raw.githubusercontent.com/VRH7733/ComfyUI-RaghaPreviewVideo/main/assets/icon.png"

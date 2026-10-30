@@ -25,12 +25,12 @@ Connect a second clip and compare the two with a drag slider or side by side.
 ## Install
 
 **Option 1 — ComfyUI-Manager / Comfy Registry**
-Search for **Ragha Preview Video** in the Manager, or run `comfy node install comfyui-fastvideopreview`.
+Search for **Ragha Preview Video** in the Manager, or run `comfy node install comfyui-ragha-preview-video`.
 
 **Option 2 — git**
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/VRH7733/ComfyUI-FastVideoPreview
+git clone https://github.com/VRH7733/ComfyUI-RaghaPreviewVideo
 ```
 
 **Option 3 — manual**
