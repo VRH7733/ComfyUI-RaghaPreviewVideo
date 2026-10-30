@@ -109,6 +109,12 @@ with 4K 30 fps phone-like videos (~67 Mbit/s, with sound), default settings (`ma
   A modern 6–8-core CPU should be roughly 2–4× faster than the numbers above.
 - Minimum for 1-minute 4K: **8 GB system RAM** (ComfyUI itself plus the node). 16 GB is comfortable alongside models.
 
+**Big video files: ComfyUI's 100 MB upload limit**
+ComfyUI refuses uploads over **100 MB** by default, and a 15 s 4K clip is already ~130 MB (1 minute is ~350–500 MB).
+This is a ComfyUI setting and affects every video node. Either:
+- copy the video into ComfyUI's **input** folder and pick it in *Load Video* (refresh the list if it does not show), or
+- start ComfyUI with a bigger limit, for example `--max-upload-size 1024` (ComfyUI Desktop: *Settings → Server Config*).
+
 **Settings for long or 4K videos**
 | You want | Set |
 |---|---|
