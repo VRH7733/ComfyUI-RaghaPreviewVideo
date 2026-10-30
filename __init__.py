@@ -192,7 +192,6 @@ class FastVideoPreview:
             },
             "hidden": {
                 "unique_id": "UNIQUE_ID",
-                "prompt_id": "PROMPT_ID",
             },
         }
 
@@ -209,7 +208,7 @@ class FastVideoPreview:
     DESCRIPTION = "Fast video preview over the binary websocket. Nothing is written to disk."
 
     def preview(self, fps, max_size, quality, max_frames,
-                images=None, video=None, unique_id=None, prompt_id=None):
+                images=None, video=None, unique_id=None):
         frames = None
         if images is None and video is not None:
             try:
@@ -252,7 +251,8 @@ class FastVideoPreview:
                         {
                             "node_id": unique_id,
                             "display_node_id": unique_id,
-                            "prompt_id": prompt_id or "",
+                            # ComfyUI has no PROMPT_ID hidden input; the server tracks the running prompt
+                            "prompt_id": getattr(server, "last_prompt_id", None) or "",
                         },
                     ),
                     server.client_id,
@@ -267,6 +267,6 @@ class FastVideoPreview:
         return {"ui": {"fast_video_preview": [True]}, "result": ()}
 
 
-NODE_CLASS_MAPPINGS = {"FastVideoPreview": FastVideoPreview}
-NODE_DISPLAY_NAME_MAPPINGS = {"FastVideoPreview": "Fast Video Preview"}
+NODE_CLASS_MAPPINGS = {"FastVideoPreviewKJTribute": FastVideoPreview}
+NODE_DISPLAY_NAME_MAPPINGS = {"FastVideoPreviewKJTribute": "Fast Video Preview (KJ Tribute)"}
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

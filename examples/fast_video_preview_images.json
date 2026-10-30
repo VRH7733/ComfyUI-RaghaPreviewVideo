@@ -78,7 +78,7 @@
     },
     {
       "id": 2,
-      "type": "FastVideoPreview",
+      "type": "FastVideoPreviewKJTribute",
       "pos": [
         420,
         60
@@ -144,7 +144,7 @@
       ],
       "outputs": [],
       "properties": {
-        "Node name for S&R": "FastVideoPreview"
+        "Node name for S&R": "FastVideoPreviewKJTribute"
       },
       "widgets_values": [
         16,
