@@ -267,6 +267,6 @@ class FastVideoPreview:
         return {"ui": {"fast_video_preview": [True]}, "result": ()}
 
 
-NODE_CLASS_MAPPINGS = {"FastVideoPreviewKJTribute": FastVideoPreview}
-NODE_DISPLAY_NAME_MAPPINGS = {"FastVideoPreviewKJTribute": "Fast Video Preview (KJ Tribute)"}
+NODE_CLASS_MAPPINGS = {"RaghaPreviewVideo": FastVideoPreview}
+NODE_DISPLAY_NAME_MAPPINGS = {"RaghaPreviewVideo": "Ragha Preview Video"}
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

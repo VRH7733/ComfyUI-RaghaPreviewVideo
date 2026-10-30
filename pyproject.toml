@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-fastvideopreview"
-description = "Fast, disk-free video preview node for ComfyUI. A tribute to kijai's KJNodes Fast Preview, built for video."
+description = "Ragha Preview Video: a fast, disk-free video preview node for ComfyUI. A tribute to kijai's KJNodes Fast Preview, built for video."
 version = "1.1.0"
 license = { file = "LICENSE" }
 readme = "README.md"
@@ -13,5 +13,5 @@ Issues = "https://github.com/VRH7733/ComfyUI-FastVideoPreview/issues"
 
 [tool.comfy]
 PublisherId = "raghav"
-DisplayName = "Fast Video Preview (KJ Tribute)"
+DisplayName = "Ragha Preview Video"
 Icon = "https://raw.githubusercontent.com/VRH7733/ComfyUI-FastVideoPreview/main/assets/icon.png"

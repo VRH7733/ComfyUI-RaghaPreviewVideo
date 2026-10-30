@@ -38,9 +38,9 @@ function fitToVideo(node, video) {
 }
 
 app.registerExtension({
-  name: "VRH7733.FastVideoPreviewKJTribute",
+  name: "VRH7733.RaghaPreviewVideo",
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (nodeData?.name !== "FastVideoPreviewKJTribute") return;
+    if (nodeData?.name !== "RaghaPreviewVideo") return;
 
     const origCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function () {

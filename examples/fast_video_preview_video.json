@@ -58,7 +58,7 @@
     },
     {
       "id": 2,
-      "type": "FastVideoPreviewKJTribute",
+      "type": "RaghaPreviewVideo",
       "pos": [
         420,
         60
@@ -124,7 +124,7 @@
       ],
       "outputs": [],
       "properties": {
-        "Node name for S&R": "FastVideoPreviewKJTribute"
+        "Node name for S&R": "RaghaPreviewVideo"
       },
       "widgets_values": [
         16,

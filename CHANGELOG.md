@@ -1,8 +1,8 @@
 # Changelog
 
 ## 1.1.0
-- The node is now **Fast Video Preview (KJ Tribute)**, internal name `FastVideoPreviewKJTribute`, so its name is unique on every platform and carries the tribute to kijai.
-- **Workflows saved with 1.0.0** show the old `FastVideoPreview` node as missing: delete it and add *Fast Video Preview (KJ Tribute)* in its place (same inputs and settings).
+- The node is now **Ragha Preview Video**, internal name `RaghaPreviewVideo`, so its name is unique on every platform. It is still a tribute to kijai's Fast Preview (see the README).
+- **Workflows saved with 1.0.0** show the old `FastVideoPreview` node as missing: delete it and add *Ragha Preview Video* in its place (same inputs and settings).
 - Removed the unused `PROMPT_ID` hidden input. Previews now carry the real prompt id from the server.
 - Added a registry icon.
 

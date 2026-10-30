@@ -1,6 +1,6 @@
-# ComfyUI-FastVideoPreview
+# Ragha Preview Video (ComfyUI-FastVideoPreview)
 
-**A fast, disk-free video preview node for ComfyUI.**
+**Ragha Preview Video: a fast, disk-free video preview node for ComfyUI.**
 Connect a batch of frames or a video, press Run, and a small looping preview plays right on the node. Nothing is saved to your output or temp folders.
 
 > ## Credit where it is due: thank you, Kijai
@@ -32,20 +32,20 @@ Download the repo as a ZIP, extract it, and put the `ComfyUI-FastVideoPreview` f
 The folder must **directly contain** `__init__.py` (watch out for a doubled `ComfyUI-FastVideoPreview/ComfyUI-FastVideoPreview` folder after extracting).
 
 **Option 3 — ComfyUI-Manager / Comfy Registry**
-Search for **FastVideoPreview** in the Manager, or run `comfy node install comfyui-fastvideopreview`.
+Search for **Ragha Preview Video** (or FastVideoPreview) in the Manager, or run `comfy node install comfyui-fastvideopreview`.
 
 Then restart ComfyUI and hard-refresh the browser (Ctrl+F5).
 Requires PyAV (`av`), which current ComfyUI already includes. If it is missing: `pip install av`.
 
 ## Use it
-1. Double-click the canvas, search **Fast Video Preview (KJ Tribute)** (category `video/preview`), and add it.
-   Its internal name is `FastVideoPreviewKJTribute`. Coming from 1.0.0? See the [changelog](CHANGELOG.md).
+1. Double-click the canvas, search **Ragha Preview Video** (category `video/preview`), and add it.
+   Its internal name is `RaghaPreviewVideo`. Coming from 1.0.0? See the [changelog](CHANGELOG.md).
 2. Connect `images` (for example from *VAE Decode*) or `video` (for example from *Load Video*).
 3. Run the workflow. The preview appears on the node.
 
 Example workflows are in [`examples/`](examples):
-- `fast_video_preview_images.json` — Empty Image → Fast Video Preview (KJ Tribute) (no model or GPU needed)
-- `fast_video_preview_video.json` — Load Video → Fast Video Preview (KJ Tribute) (pick your own clip in *Load Video*)
+- `fast_video_preview_images.json` — Empty Image → Ragha Preview Video (no model or GPU needed)
+- `fast_video_preview_video.json` — Load Video → Ragha Preview Video (pick your own clip in *Load Video*)
 
 ### Inputs
 | Input | Meaning |
