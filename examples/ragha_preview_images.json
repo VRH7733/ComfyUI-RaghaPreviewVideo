@@ -220,7 +220,7 @@
         0,
         "slider",
         true,
-        true
+        false
       ]
     }
   ],

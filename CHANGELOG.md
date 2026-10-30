@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0
+- **New delivery of the preview**: finished clips are kept on an in-memory shelf (never on disk) and the player fetches them by
+  one-off token from `/ragha_preview_video/clip/<token>`. The node no longer uses the websocket image-preview messages.
+- **Cached runs show the preview again** without re-encoding, so `refresh_every_run` is now **off by default**.
+- **New player** (`web/ragha_preview_video.js`): written from scratch, loads clips when the node reports its output and
+  shows a message when a preview has expired.
+- Renamed files: `web/ragha_preview_video.js` and `examples/ragha_preview_*.json`. Category is now `video/ragha`.
+  The node name (`RaghaPreviewVideo`), inputs and outputs are unchanged, so saved workflows keep working.
+
 ## 1.2.1
 - **Much lower RAM for long and 4K videos**: frames are now decoded, shrunk and encoded one at a time instead of being collected first.
   A 1-minute 4K video went from ~1.1 GB to ~200 MB of extra RAM, and previews are 8–16% faster. Image batches are shrunk a few frames at a time.

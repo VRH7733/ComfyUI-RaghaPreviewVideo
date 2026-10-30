@@ -1,40 +1,38 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """
-ComfyUI-FastVideoPreview: the "Ragha Preview Video" node
+Ragha Preview Video
 
-A "Fast Preview" for video, built as a tribute to the Fast Preview node in
-kijai's ComfyUI-KJNodes (https://github.com/kijai/ComfyUI-KJNodes).
+Plays a video preview (with sound, and an optional A/B comparison) right on the node,
+without writing anything to disk:
 
-It follows the same method: encode in memory, write nothing to disk, and push the
-bytes to the browser over ComfyUI's own binary websocket preview channel
-(BinaryEventTypes.PREVIEW_IMAGE_WITH_METADATA). The difference is the payload:
-KJNodes sends one JPEG/PNG still; this node sends small H.264 clips (with audio,
-and an optional second clip for A/B comparison), and web/fast_video_preview.js
-plays them on the node.
+  1. frames are streamed from the source: decoded or read from the batch, shrunk and
+     encoded to H.264 one at a time, so even a 1-minute 4K video needs little RAM;
+  2. the finished clips are kept on a small in-memory shelf (never on disk);
+  3. the node's UI output carries only short random tokens, and the player in
+     web/ragha_preview_video.js fetches each clip from /ragha_preview_video/clip/<token>.
 
-Frames are streamed: decoded (or read from the batch), shrunk and encoded one at a
-time, so a 1-minute 4K video previews with a small, constant amount of RAM.
+Because the tokens travel in the regular UI output, a cached run shows the last
+preview again without re-encoding anything.
 
-Because this follows KJNodes' structure, it is released under the same licence,
-GPL-3.0 (see LICENSE).
-
-Install: put this folder in ComfyUI/custom_nodes/ and restart ComfyUI.
+The idea of a disk-free preview was inspired by kijai's Fast Preview (ComfyUI-KJNodes);
+see the README for credits.
 """
 
 import io
-import json
-import struct
+import secrets
+import threading
 import time
+from collections import OrderedDict
 from fractions import Fraction
 
 try:
-    from server import PromptServer, BinaryEventTypes
+    from server import PromptServer
 except ImportError:  # running outside ComfyUI
     PromptServer = None
-    BinaryEventTypes = None
 
 WEB_DIRECTORY = "./web"
 LOG = "[Ragha Preview Video]"
+ROUTE = "/ragha_preview_video/clip/{token}"
 
 
 # ---------------------------------------------------------------------------
@@ -311,48 +309,74 @@ def _make_clip(slot, images, video, fps, max_size, max_frames, quality, audio=No
 
 
 # ---------------------------------------------------------------------------
-# Sending
+# In-memory shelf for finished clips, served to the player over HTTP
 # ---------------------------------------------------------------------------
-_MAGIC = b"RPV1"
-
-
-def _pack(clips, compare):
+class _ClipShelf:
     """
-    One preview message for one or two clips:
-    b"RPV1" + uint32 header length + JSON header + clip bytes (in header order).
-    web/fast_video_preview.js unpacks it.
-    """
-    header = {"compare": compare, "clips": [
-        {k: c[k] for k in ("slot", "mime", "audio", "fps", "width", "height")} | {"bytes": len(c["data"])}
-        for c in clips
-    ]}
-    head = json.dumps(header).encode("utf-8")
-    return _MAGIC + struct.pack(">I", len(head)) + head + b"".join(c["data"] for c in clips)
-
-
-class _EncodedPayload:
-    """
-    Stands in for the PIL image that ComfyUI's preview sender expects. The sender
-    only calls .save(fp, ...) to get bytes; here the bytes are already encoded
-    (video clips), so save() just writes them. This lets the clips travel through
-    the stock binary preview channel exactly like KJNodes' still image does.
+    Keeps finished preview clips in RAM (never on disk) under random tokens.
+    Each node keeps only its latest clips; the oldest clips of other nodes are
+    dropped first once the shelf is over its size budget.
     """
 
-    mode = "RGB"
+    def __init__(self, budget_bytes=192 * 2**20):
+        self._budget = budget_bytes
+        self._clips = OrderedDict()  # token -> (bytes, mime)
+        self._by_node = {}           # node id -> tokens of its latest preview
+        self._used = 0
+        self._lock = threading.Lock()
 
-    def __init__(self, data, size):
-        self._data = data
-        self.size = size
-        self.width, self.height = size
+    def _discard(self, token):
+        item = self._clips.pop(token, None)
+        if item is not None:
+            self._used -= len(item[0])
 
-    def save(self, fp, *args, **kwargs):
-        fp.write(self._data)
+    def shelve(self, node_id, clips):
+        with self._lock:
+            for token in self._by_node.pop(node_id, ()):
+                self._discard(token)
+            fresh = []
+            for clip in clips:
+                token = secrets.token_urlsafe(16)
+                self._clips[token] = (clip["data"], clip["mime"])
+                self._used += len(clip["data"])
+                fresh.append(token)
+            self._by_node[node_id] = fresh
+            for token in list(self._clips):
+                if self._used <= self._budget:
+                    break
+                if token not in fresh:
+                    self._discard(token)
+            return fresh
+
+    def fetch(self, token):
+        with self._lock:
+            return self._clips.get(token)
+
+
+SHELF = _ClipShelf()
+
+
+def _add_route():
+    if PromptServer is None or getattr(PromptServer, "instance", None) is None:
+        return
+    from aiohttp import web
+
+    @PromptServer.instance.routes.get(ROUTE)
+    async def ragha_clip(request):
+        item = SHELF.fetch(request.match_info["token"])
+        if item is None:
+            return web.Response(status=404, text="This preview is no longer in memory. Run the node again.")
+        data, mime = item
+        return web.Response(body=data, content_type=mime, headers={"Cache-Control": "no-store"})
+
+
+_add_route()
 
 
 # ---------------------------------------------------------------------------
 # The node
 # ---------------------------------------------------------------------------
-class FastVideoPreview:
+class RaghaPreviewVideo:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -380,9 +404,10 @@ class FastVideoPreview:
                     "tooltip": "Play sound from 'audio', or else from the A video's own audio track.",
                 }),
                 "refresh_every_run": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "Send a new preview on every Run, even when nothing changed. "
-                               "Turn off when you use the outputs, so the nodes after this one are not re-run.",
+                    "default": False,
+                    "tooltip": "Re-encode the preview on every Run even when nothing changed. Usually not needed: "
+                               "a cached run shows the last preview again. Leave off when you use the outputs, "
+                               "so the nodes after this one are not re-run.",
                 }),
             },
             "optional": {
@@ -398,9 +423,7 @@ class FastVideoPreview:
         }
 
     @classmethod
-    def IS_CHANGED(cls, refresh_every_run=True, **kwargs):
-        # A preview should appear on every Run, even when nothing upstream changed.
-        # Otherwise ComfyUI's cache skips this node and no new preview is sent.
+    def IS_CHANGED(cls, refresh_every_run=False, **kwargs):
         return float("NaN") if refresh_every_run else False
 
     RETURN_TYPES = ("IMAGE", "VIDEO", "AUDIO")
@@ -410,15 +433,15 @@ class FastVideoPreview:
         "The 'video' input, passed through unchanged.",
         "The 'audio' input, or the A video's audio track.",
     )
-    FUNCTION = "preview"
-    CATEGORY = "video/preview"
+    FUNCTION = "build_preview"
+    CATEGORY = "video/ragha"
     OUTPUT_NODE = True
-    DESCRIPTION = ("Fast video preview over the binary websocket, with sound and A/B compare. "
-                   "Nothing is written to disk. A tribute to kijai's Fast Preview.")
+    DESCRIPTION = ("Plays a video preview on the node, with sound and an optional A/B comparison. "
+                   "Streams 4K video with little RAM and writes nothing to disk.")
 
-    def preview(self, fps, max_size, quality, max_frames, compare="slider", include_audio=True,
-                refresh_every_run=True, images=None, video=None, images_b=None, video_b=None,
-                audio=None, unique_id=None):
+    def build_preview(self, fps, max_size, quality, max_frames, compare="slider", include_audio=True,
+                      refresh_every_run=False, images=None, video=None, images_b=None, video_b=None,
+                      audio=None, unique_id=None):
         if images is None and video is None:
             raise ValueError("Ragha Preview Video: connect either 'images' or 'video'.")
 
@@ -441,47 +464,18 @@ class FastVideoPreview:
             # a B frame batch plays at A's rate, so frame N of B lines up with frame N of A
             clips.append(_make_clip("B", images_b, video_b, clips[0]["fps"], max_size, max_frames, quality))
 
-        data = _pack(clips, compare)
-        payload = _EncodedPayload(data, (clips[0]["width"], clips[0]["height"]))
-
-        if PromptServer is not None and unique_id is not None:
-            server = PromptServer.instance
-            client_supports_metadata = False
-            if hasattr(BinaryEventTypes, "PREVIEW_IMAGE_WITH_METADATA"):
-                try:
-                    from comfy_api import feature_flags
-                    client_supports_metadata = feature_flags.supports_feature(
-                        server.sockets_metadata, server.client_id, "supports_preview_metadata"
-                    )
-                except Exception:
-                    client_supports_metadata = False
-
-            # "JPEG" only labels the stock sender's header; the bytes are video clips
-            # and web/fast_video_preview.js unpacks them.
-            if client_supports_metadata:
-                server.send_sync(
-                    BinaryEventTypes.PREVIEW_IMAGE_WITH_METADATA,
-                    (
-                        ("JPEG", payload, None),
-                        {
-                            "node_id": unique_id,
-                            "display_node_id": unique_id,
-                            # ComfyUI has no PROMPT_ID hidden input; the server tracks the running prompt
-                            "prompt_id": getattr(server, "last_prompt_id", None) or "",
-                        },
-                    ),
-                    server.client_id,
-                )
-            else:
-                server.send_sync(
-                    BinaryEventTypes.UNENCODED_PREVIEW_IMAGE,
-                    ("JPEG", payload, None),
-                    server.client_id,
-                )
-
-        return {"ui": {"fast_video_preview": [True]}, "result": (images, video, audio_out)}
+        tokens = SHELF.shelve(str(unique_id), clips)
+        card = {
+            "compare": compare,
+            "clips": [
+                {"token": t, "slot": c["slot"], "mime": c["mime"], "audio": c["audio"],
+                 "fps": round(c["fps"], 3), "width": c["width"], "height": c["height"], "bytes": len(c["data"])}
+                for t, c in zip(tokens, clips)
+            ],
+        }
+        return {"ui": {"ragha_preview_video": [card]}, "result": (images, video, audio_out)}
 
 
-NODE_CLASS_MAPPINGS = {"RaghaPreviewVideo": FastVideoPreview}
+NODE_CLASS_MAPPINGS = {"RaghaPreviewVideo": RaghaPreviewVideo}
 NODE_DISPLAY_NAME_MAPPINGS = {"RaghaPreviewVideo": "Ragha Preview Video"}
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

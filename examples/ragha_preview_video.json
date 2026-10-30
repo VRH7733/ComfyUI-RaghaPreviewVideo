@@ -200,7 +200,7 @@
         96,
         "slider",
         true,
-        true
+        false
       ]
     }
   ],
