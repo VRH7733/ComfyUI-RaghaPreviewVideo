@@ -1,7 +1,8 @@
 # Changelog
 
 ## 1.3.1
-- Documentation only: changelog and release notes cleaned up. No code changes.
+- Node description now states what it does like a Fast Preview: raw binary clips, no base64/JSON, nothing on disk.
+- README: ComfyUI's 100 MB upload limit for big videos. Changelog and release notes cleaned up.
 
 ## 1.3.0
 - **Home**: GitHub repo `VRH7733/ComfyUI-RaghaPreviewVideo`, registry pack `comfyui-ragha-preview-video`.
