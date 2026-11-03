@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.0.0 - Ragha Video Inspector
+The node is now a **video QC inspector**, not only a preview. Same node id (`RaghaPreviewVideo`) and pack name,
+so existing workflows keep working; the display name is now **Ragha Video Inspector**.
+- **QC on every frame** (even when the preview is sub-sampled): frozen / duplicate, glitch, flicker, black, flash and cut
+  frames, flicker index, loop-seam check, motion curve. Verdict OK / CHECK / BAD. Fades to/from black at the clip edges
+  are reported but not counted as problems.
+- **QC timeline** under the player: coloured flags and curves; click / drag to seek, hover for a frame's flags.
+- **Player**: frame stepping (buttons and arrow keys), jump to previous / next flagged frame, speed 0.25x-2x, loop-seam
+  button, view menu.
+- **Jitter view**: a heat map of what changed since the previous frame.
+- **A/B**: new `difference` and `onion skin` modes, A-vs-B curve on the timeline, PSNR and the most different frame.
+- **Frame picker**: new `pick_frame` setting (`-1` last, `-2` last good frame) and `picked_frame` IMAGE output at full
+  resolution, decoded by ComfyUI's own decoder. The pin button on the player sets it. Only decoded when connected.
+- **`qc_report`** STRING output.
+- Changing only `pick_frame` (or the view) re-uses the last preview and QC instead of re-encoding.
+- Code split into `ragha/` (sources, qc, clip encoder + shelf, node). New examples and a self-test (`tests/test_qc.py`).
+- Performance: 30 s of 4K takes 7.8 s instead of 5.7 s on 4 CPU cores, for the full QC and the jitter view.
+
+
 ## 1.3.1
 - Node description now states what it does like a Fast Preview: raw binary clips, no base64/JSON, nothing on disk.
 - README: ComfyUI's 100 MB upload limit for big videos. Changelog and release notes cleaned up.

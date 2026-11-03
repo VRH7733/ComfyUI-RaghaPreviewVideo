@@ -1,19 +1,19 @@
 {
-  "id": "70fea2e9-fb3f-4fb5-81ab-901ef637f13c",
+  "id": "db25a862-94b8-478b-af36-ced679165127",
   "revision": 0,
-  "last_node_id": 2,
-  "last_link_id": 1,
+  "last_node_id": 4,
+  "last_link_id": 4,
   "nodes": [
     {
       "id": 1,
       "type": "LoadVideo",
       "pos": [
-        40,
+        20,
         60
       ],
       "size": [
-        283,
-        82
+        282.798828125,
+        233.0743408203125
       ],
       "flags": {},
       "order": 0,
@@ -44,7 +44,8 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            1
+            1,
+            2
           ]
         }
       ],
@@ -54,21 +55,123 @@
       "widgets_values": [
         "example.mp4",
         "image"
-      ]
+      ],
+      "widgets_values_named": {
+        "file": "bad.mp4",
+        "upload": "image"
+      }
     },
     {
       "id": 2,
-      "type": "RaghaPreviewVideo",
+      "type": "GetVideoComponents",
       "pos": [
-        420,
-        60
+        20,
+        380
       ],
       "size": [
-        360,
-        420
+        193.530859375,
+        106
       ],
       "flags": {},
-      "order": 9,
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "localized_name": "fps",
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "localized_name": "bit_depth",
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "localized_name": "color_space",
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetVideoComponents"
+      }
+    },
+    {
+      "id": 3,
+      "type": "ImageInvert",
+      "pos": [
+        20,
+        560
+      ],
+      "size": [
+        169.1265625,
+        246
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageInvert"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 4,
+      "type": "RaghaPreviewVideo",
+      "pos": [
+        380,
+        40
+      ],
+      "size": [
+        600,
+        772
+      ],
+      "flags": {},
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -90,7 +193,7 @@
           "name": "images_b",
           "shape": 7,
           "type": "IMAGE",
-          "link": null
+          "link": 4
         },
         {
           "localized_name": "video_b",
@@ -168,6 +271,24 @@
             "name": "refresh_every_run"
           },
           "link": null
+        },
+        {
+          "localized_name": "pick_frame",
+          "name": "pick_frame",
+          "type": "INT",
+          "widget": {
+            "name": "pick_frame"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analyze",
+          "name": "analyze",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "analyze"
+          },
+          "link": null
         }
       ],
       "outputs": [
@@ -188,6 +309,18 @@
           "name": "audio",
           "type": "AUDIO",
           "links": null
+        },
+        {
+          "localized_name": "picked_frame",
+          "name": "picked_frame",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "qc_report",
+          "name": "qc_report",
+          "type": "STRING",
+          "links": null
         }
       ],
       "properties": {
@@ -197,11 +330,26 @@
         16,
         512,
         50,
-        96,
-        "slider",
+        0,
+        "difference",
         true,
-        false
-      ]
+        false,
+        -1,
+        true,
+        ""
+      ],
+      "widgets_values_named": {
+        "fps": 16,
+        "max_size": 512,
+        "quality": 50,
+        "max_frames": 0,
+        "compare": "difference",
+        "include_audio": true,
+        "refresh_every_run": false,
+        "pick_frame": -1,
+        "analyze": true,
+        "ragha_player": ""
+      }
     }
   ],
   "links": [
@@ -209,9 +357,33 @@
       1,
       1,
       0,
-      2,
+      4,
       1,
       "VIDEO"
+    ],
+    [
+      2,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      2,
+      "IMAGE"
     ]
   ],
   "groups": [],

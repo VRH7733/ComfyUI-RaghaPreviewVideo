@@ -1,0 +1,398 @@
+{
+  "id": "c33d4c27-65d0-468b-b458-edb77205f83d",
+  "revision": 0,
+  "last_node_id": 5,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "pos": [
+        20,
+        60
+      ],
+      "size": [
+        282.798828125,
+        233.0743408203125
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "file",
+          "name": "file",
+          "type": "COMBO",
+          "widget": {
+            "name": "file"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "choose file to upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "VIDEO",
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "example.mp4",
+        "image"
+      ],
+      "widgets_values_named": {
+        "file": "bad.mp4",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 2,
+      "type": "RaghaPreviewVideo",
+      "pos": [
+        360,
+        40
+      ],
+      "size": [
+        600,
+        772
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "video",
+          "name": "video",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": 1
+        },
+        {
+          "localized_name": "images_b",
+          "name": "images_b",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "video_b",
+          "name": "video_b",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "localized_name": "fps",
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_size",
+          "name": "max_size",
+          "type": "INT",
+          "widget": {
+            "name": "max_size"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "quality",
+          "name": "quality",
+          "type": "INT",
+          "widget": {
+            "name": "quality"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_frames",
+          "name": "max_frames",
+          "type": "INT",
+          "widget": {
+            "name": "max_frames"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "compare",
+          "name": "compare",
+          "type": "COMBO",
+          "widget": {
+            "name": "compare"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "include_audio",
+          "name": "include_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "include_audio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "refresh_every_run",
+          "name": "refresh_every_run",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "refresh_every_run"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "pick_frame",
+          "name": "pick_frame",
+          "type": "INT",
+          "widget": {
+            "name": "pick_frame"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analyze",
+          "name": "analyze",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "analyze"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "localized_name": "picked_frame",
+          "name": "picked_frame",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "localized_name": "qc_report",
+          "name": "qc_report",
+          "type": "STRING",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RaghaPreviewVideo"
+      },
+      "widgets_values": [
+        16,
+        512,
+        50,
+        0,
+        "slider",
+        true,
+        false,
+        -2,
+        true,
+        ""
+      ],
+      "widgets_values_named": {
+        "fps": 16,
+        "max_size": 512,
+        "quality": 50,
+        "max_frames": 0,
+        "compare": "slider",
+        "include_audio": true,
+        "refresh_every_run": false,
+        "pick_frame": -2,
+        "analyze": true,
+        "ragha_player": ""
+      }
+    },
+    {
+      "id": 3,
+      "type": "PreviewImage",
+      "pos": [
+        1000,
+        40
+      ],
+      "size": [
+        360,
+        300
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Last good frame (use as I2V start image)",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 4,
+      "type": "PreviewAny",
+      "pos": [
+        1000,
+        380
+      ],
+      "size": [
+        420,
+        330
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "source",
+          "name": "source",
+          "type": "*",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "QC report",
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 5,
+      "type": "Note",
+      "pos": [
+        20,
+        380
+      ],
+      "size": [
+        320,
+        260
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Ragha Video Inspector\n\n1. Pick a video in Load Video and press Run.\n2. The badge shows OK / CHECK / BAD; the timeline marks frozen (blue), cut (yellow), glitch (pink), flash (white), black (grey) and flicker (orange) frames. Click it to jump there, or use the skip buttons.\n3. Pin button = output the current frame. Check button = pick_frame -2: the last GOOD frame, for image-to-video continuation.\n4. View menu: jitter shows what changed since the previous frame."
+      ],
+      "widgets_values_named": {
+        "text": "Ragha Video Inspector\n\n1. Pick a video in Load Video and press Run.\n2. The badge shows OK / CHECK / BAD; the timeline marks frozen (blue), cut (yellow), glitch (pink), flash (white), black (grey) and flicker (orange) frames. Click it to jump there, or use the skip buttons.\n3. Pin button = output the current frame. Check button = pick_frame -2: the last GOOD frame, for image-to-video continuation.\n4. View menu: jitter shows what changed since the previous frame."
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      1,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      3,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      2,
+      4,
+      4,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}
