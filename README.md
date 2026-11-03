@@ -93,7 +93,7 @@ Example workflows are in [`examples/`](examples):
 | Output | Meaning |
 |---|---|
 | `images`, `video`, `audio` | Passthrough of the inputs (`audio` falls back to the A video's track). |
-| `picked_frame` | The chosen frame at full resolution, decoded by ComfyUI's own video decoder (same colours as *Get Video Components*). Only decoded when something is connected to it. |
+| `picked_frame` | The chosen frame at full resolution, decoded by ComfyUI's own video decoder (same colours as *Get Video Components*). |
 | `qc_report` | The QC report as text: verdict, flicker, and every flagged frame number. |
 
 Old workflows (1.x) load as they are: the two new settings get their defaults, all other values are kept.
@@ -104,7 +104,7 @@ Measured on 4 CPU cores, no GPU, 30 s 4K 30 fps video with sound, default settin
 | | 1.3.1 (preview only) | 2.0.0 (preview + full QC + jitter view) |
 |---|---|---|
 | Time | 5.7 s | 7.8 s |
-| Picking a 4K frame (`picked_frame` connected) | – | +1.4 s |
+| Decoding the picked 4K frame | – | +1.4 s |
 
 Frames are decoded, shrunk and analysed one at a time, so RAM does not grow with the length of the video.
 The analysis uses ~96-pixel thumbnails taken from the preview frames, which is why it costs so little.

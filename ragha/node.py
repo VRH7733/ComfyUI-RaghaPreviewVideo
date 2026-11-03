@@ -43,28 +43,6 @@ def _same(a, b):
     return a is b and a is not None or (a is None and b is None)
 
 
-def _output_used(prompt, node, slot):
-    """Is output `slot` of this node linked to anything? (True when we cannot tell.)"""
-    if not isinstance(prompt, dict):
-        return True
-    for other in prompt.values():
-        for value in (other.get("inputs") or {}).values():
-            if isinstance(value, list) and len(value) == 2 and str(value[0]) == node and value[1] == slot:
-                return True
-    return False
-
-
-def _placeholder():
-    import torch
-
-    return torch.zeros((1, 64, 64, 3))
-
-
-def _resolve(index, frames):
-    i = index if index >= 0 else frames + index
-    return max(0, min(frames - 1, i))
-
-
 def _progress(total):
     try:
         import comfy.utils
@@ -201,7 +179,6 @@ class RaghaPreviewVideo:
             },
             "hidden": {
                 "unique_id": "UNIQUE_ID",
-                "prompt": "PROMPT",
             },
         }
 
@@ -231,7 +208,7 @@ class RaghaPreviewVideo:
 
     def inspect(self, fps, max_size, quality, max_frames, compare="slider", include_audio=True,
                 refresh_every_run=False, pick_frame=-1, analyze=True, images=None, video=None,
-                images_b=None, video_b=None, audio=None, unique_id=None, prompt=None):
+                images_b=None, video_b=None, audio=None, unique_id=None):
         if images is None and video is None:
             raise ValueError("Ragha Video Inspector: connect either 'images' or 'video'.")
         if compare not in COMPARE_MODES:
@@ -255,10 +232,9 @@ class RaghaPreviewVideo:
         index = pick_frame
         if pick_frame == -2:
             index = QC.last_good(qc) if qc else -1
-        if _output_used(prompt, node, 3):
-            picked, picked_index = grab_frame(images, video, index, memo["times"])
-        else:  # nothing reads picked_frame: skip decoding a full-resolution frame
-            picked, picked_index = _placeholder(), _resolve(index, info["frames"])
+        # always decode it: ComfyUI caches this node by its inputs, so a placeholder returned while
+        # nothing was connected would be reused later when something is connected
+        picked, picked_index = grab_frame(images, video, index, memo["times"])
         text = QC.report(qc, info, ab, picked_index) if qc else (
             f"Ragha Video Inspector - A: {info['frames']} frames (QC off). Picked frame: {picked_index}")
 

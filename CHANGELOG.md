@@ -12,7 +12,7 @@ so existing workflows keep working; the display name is now **Ragha Video Inspec
 - **Jitter view**: a heat map of what changed since the previous frame.
 - **A/B**: new `difference` and `onion skin` modes, A-vs-B curve on the timeline, PSNR and the most different frame.
 - **Frame picker**: new `pick_frame` setting (`-1` last, `-2` last good frame) and `picked_frame` IMAGE output at full
-  resolution, decoded by ComfyUI's own decoder. The pin button on the player sets it. Only decoded when connected.
+  resolution, decoded by ComfyUI's own decoder. The pin button on the player sets it.
 - **`qc_report`** STRING output.
 - Changing only `pick_frame` (or the view) re-uses the last preview and QC instead of re-encoding.
 - Code split into `ragha/` (sources, qc, clip encoder + shelf, node). New examples and a self-test (`tests/test_qc.py`).
