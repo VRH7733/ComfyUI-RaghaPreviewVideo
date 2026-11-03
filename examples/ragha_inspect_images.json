@@ -1,5 +1,5 @@
 {
-  "id": "cafec53d-1630-444a-9464-1bba64bae97f",
+  "id": "a00b53b2-64ec-479d-9835-79a576faa264",
   "revision": 0,
   "last_node_id": 2,
   "last_link_id": 1,
@@ -8,12 +8,12 @@
       "id": 1,
       "type": "EmptyImage",
       "pos": [
-        40,
+        20,
         60
       ],
       "size": [
         270,
-        130
+        273.875
       ],
       "flags": {},
       "order": 0,
@@ -74,21 +74,27 @@
         512,
         48,
         16711680
-      ]
+      ],
+      "widgets_values_named": {
+        "width": 512,
+        "height": 512,
+        "batch_size": 48,
+        "color": 16711680
+      }
     },
     {
       "id": 2,
       "type": "RaghaPreviewVideo",
       "pos": [
-        420,
-        60
+        360,
+        40
       ],
       "size": [
-        360,
-        420
+        520,
+        944
       ],
       "flags": {},
-      "order": 9,
+      "order": 1,
       "mode": 0,
       "inputs": [
         {
@@ -188,6 +194,24 @@
             "name": "refresh_every_run"
           },
           "link": null
+        },
+        {
+          "localized_name": "pick_frame",
+          "name": "pick_frame",
+          "type": "INT",
+          "widget": {
+            "name": "pick_frame"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "analyze",
+          "name": "analyze",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "analyze"
+          },
+          "link": null
         }
       ],
       "outputs": [
@@ -208,6 +232,18 @@
           "name": "audio",
           "type": "AUDIO",
           "links": null
+        },
+        {
+          "localized_name": "picked_frame",
+          "name": "picked_frame",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "qc_report",
+          "name": "qc_report",
+          "type": "STRING",
+          "links": null
         }
       ],
       "properties": {
@@ -220,8 +256,23 @@
         0,
         "slider",
         true,
-        false
-      ]
+        false,
+        -1,
+        true,
+        ""
+      ],
+      "widgets_values_named": {
+        "fps": 16,
+        "max_size": 512,
+        "quality": 50,
+        "max_frames": 0,
+        "compare": "slider",
+        "include_audio": true,
+        "refresh_every_run": false,
+        "pick_frame": -1,
+        "analyze": true,
+        "ragha_player": ""
+      }
     }
   ],
   "links": [
